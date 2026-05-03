@@ -1,0 +1,29 @@
+{
+  "name": "pizzaria-server",
+  "version": "1.0.0",
+  "description": "Sistema PDV e Monitor para Pizzaria",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "pkg ."
+  },
+  "bin": {
+    "pizzaria-system": "server.js"
+  },
+  "keywords": [],
+  "author": "Toad",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "axios": "^1.13.2",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
+    "node-thermal-printer": "^4.6.0",
+    "sql.js": "^1.13.0"
+  }
+}
