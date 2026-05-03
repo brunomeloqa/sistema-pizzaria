@@ -1,0 +1,431 @@
+/* src/App.css ou src/index.css */
+
+/* --- Estilos Gerais --- */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f7f6;
+    margin: 0;
+    padding: 0;
+    color: #333;
+}
+
+.App {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+h1 {
+    background-color: #c0392b; /* Vermelho Pizzaria */
+    color: white;
+    padding: 15px 20px;
+    margin: 0;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+h2, h3 {
+    color: #2c3e50;
+    border-bottom: 2px solid #ecf0f1;
+    padding-bottom: 5px;
+}
+
+/* --- Botões Padrão --- */
+button {
+    background-color: #e67e22; /* Laranja/Açafrão */
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    margin: 5px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+button:hover {
+    background-color: #d35400;
+}
+
+button:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+}
+
+/* --- Formulários e Inputs --- */
+input, textarea {
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.message {
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 4px;
+    background-color: #f39c12; /* Amarelo (Alerta/Feedback) */
+    color: white;
+    font-weight: bold;
+}
+
+/* --- Login --- */
+.login-container {
+    max-width: 400px;
+    margin: 50px auto;
+    padding: 30px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.login-container form div {
+    text-align: left;
+    margin-bottom: 15px;
+}
+
+.login-container label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+/* --- Dashboard (Menu de Navegação) --- */
+.dashboard-layout {
+    display: flex;
+    flex-grow: 1; /* Ocupa o espaço restante */
+}
+
+.sidebar {
+    width: 250px;
+    background-color: #34495e; /* Azul Escuro */
+    padding: 20px;
+    color: white;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar h2 {
+    color: white;
+    margin-top: 0;
+    border-bottom: 1px solid #7f8c8d;
+}
+
+.sidebar button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border-bottom: 1px solid #3d556e;
+    padding: 15px 10px;
+    margin: 0;
+    border-radius: 0;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.sidebar button:hover {
+    background-color: #2c3e50;
+}
+
+.sidebar button.active {
+    background-color: #e67e22; /* Laranja para o ativo */
+    font-weight: bold;
+}
+
+.main-content {
+    flex-grow: 1;
+    padding: 30px;
+    background-color: #f9f9f9;
+}
+
+/* --- Monitor Kanban (MonitorCozinha.js) --- */
+.monitor-container {
+    padding: 20px;
+}
+
+.kanban-board {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto; /* Permite rolagem horizontal se muitas colunas */
+    padding-bottom: 10px;
+}
+
+.kanban-column {
+    flex-shrink: 0; /* Impede que as colunas encolham */
+    width: 300px;
+    min-height: 400px;
+    background-color: #ecf0f1; /* Cinza claro */
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.kanban-column h3 {
+    text-align: center;
+    color: #2c3e50;
+    margin-top: 0;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #bdc3c7;
+}
+
+.pedido-card {
+    background-color: white;
+    border-left: 5px solid #e67e22; /* Borda lateral para destaque */
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.btn-prev-status-small {
+    /* Faz o elemento flutuar à esquerda, permitindo que o título H4 fique ao lado */
+    float: left; 
+    
+    /* Remove o estilo padrão do botão para que pareça mais um ícone */
+    background: none;
+    border: none;
+    cursor: pointer;
+    
+    /* Garante que o botão tenha algum destaque e tamanho */
+    font-size: 1.5em; /* Torna a seta maior */
+    color: #4A4A4A; /* Cor escura sutil */
+    
+    /* Margem para não tocar no H4 */
+    margin-right: 10px; 
+    margin-top: 0px; 
+    padding: 0;
+}
+
+.pedido-card h4 {
+    margin-top: 0;
+    color: #c0392b;
+}
+
+.pedido-card button {
+    width: 100%;
+    margin-top: 10px;
+    padding: 8px;
+    display: block;
+}
+
+.btn-next-status {
+    background-color: #2ecc71; /* Verde */
+}
+.btn-next-status:hover {
+    background-color: #27ae60;
+}
+
+
+/* Variáveis de Cor - O coração do seu tema */
+:root {
+  --primary: #e67e22;    /* Laranja Pizza */
+  --secondary: #636e72;  /* Cinza Botão Voltar */
+  --success: #27ae60;    /* Verde Confirmar */
+  --danger: #e74c3c;     /* Vermelho Remover */
+  --dark: #2d3436;       /* Fundo da Comanda */
+  --dark-deep: #1e272e;  /* Rodapé da Comanda */
+  --light: #f4f7f6;      /* Fundo da Tela */
+  --white: #ffffff;
+  --border: #dfe6e9;
+  --text-muted: #bdc3c7;
+}
+
+/* Layout Base */
+.app-container {
+  padding: 20px;
+  background-color: var(--light);
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.main-layout {
+  display: flex;
+  gap: 20px;
+  height: calc(100vh - 140px);
+}
+
+/* Colunas */
+.col-cardapio {
+  flex: 2;
+  background: var(--white);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+/* Estilo da Comanda (UNIFICADO) */
+.col-comanda {
+  flex: 1;
+  background: var(--dark);
+  border-radius: 15px;
+  display: flex;
+  flex-direction: column;
+  color: var(--white);
+  overflow: hidden;
+  box-shadow: 0 10px 20px rgba(255, 249, 230, 0.2);
+}
+
+.comanda-header {
+  padding: 20px;
+  border-bottom: 1px solid #444;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.comanda-itens {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.comanda-linha {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #3d4547;
+}
+
+.comanda-footer {
+  padding: 20px;
+  background: var(--dark-deep);
+}
+
+/* Botões Padronizados */
+.btn-primary { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+.btn-success { background: var(--success); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; }
+.btn-danger { background: var(--danger); color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+
+/* Inputs */
+.input-busca {
+  flex: 1;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 16px;
+}
+
+.btnImprimir { 
+    flex: 1;
+    padding: 12px;
+    background: #6c757d;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.btnPagar {
+    flex: 2; padding: 12px;
+    background: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold
+}
+
+.btnConfirma {
+    flex: 1;
+    padding: 15px;
+    background: #28a745;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 16px
+}
+
+.btnCancela {
+    padding: 15px;
+    background: #dc3545;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 16px
+}
+
+.inputFull {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    font-size: 18px;
+    border-radius: 5px;
+    border: 1px solid #ccc 
+}
+
+.modalPagamento {
+    background: #fff;
+    padding: 30px;
+    border-radius: 15px;
+    text-align: center;
+    width: 400px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3) 
+}
+
+.overlayPagamento {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(3, 3, 3, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 11000
+}
+
+/* Estilos para o Seletor de Pagamento */
+.pagamento-container {
+  margin-top: 15px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+
+.pagamento-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.btn-pagamento {
+  padding: 10px;
+  border: 1px solid #444;
+  background: transparent;
+  color: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: 0.2s;
+}
+
+.btn-pagamento.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  font-weight: bold;
+}
+
+/* Utilitários da Comanda */
+.comanda-obs {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-left: 20px;
+}
+
+.total-destaque {
+  font-size: 24px;
+  color: var(--success);
+  font-weight: bold;
+}
