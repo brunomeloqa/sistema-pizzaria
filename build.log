@@ -1,0 +1,7 @@
+
+> sistema-pizzaria-instalador@1.0.0 build:backend
+> pkg pizzaria-server/bootstrap.js --output SistemaPizzaria.exe --targets node18-win-x64
+
+> pkg@5.8.1
+> Warning Babel parse has failed: Unexpected token (271:25)
+> Warning Failed to make bytecode node18-x64 for file C:\snapshot\sistema_pizzaria\pizzaria-server\routes\pedidoRoutes.js

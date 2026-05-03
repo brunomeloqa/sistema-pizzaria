@@ -1,0 +1,31 @@
+{
+    "name": "sistema-pizzaria-instalador",
+    "version": "1.0.0",
+    "description": "Orquestrador do build e executável do sistema PDV e Monitor.",
+    "main": "pizzaria-server/bootstrap.js",
+    "bin": "pizzaria-server/bootstrap.js",
+    "scripts": {
+        "start": "node pizzaria-server/server.js",
+        "dev": "nodemon pizzaria-server/server.js",
+        "build:frontend": "npm install --prefix pizzaria-frontend && npm run build --prefix pizzaria-frontend",
+        "build:backend": "pkg . --output SistemaPizzaria.exe"
+    },
+    "pkg": {
+        "scripts": [
+            "pizzaria-server/**/*.js",
+            "pizzaria-server/node_modules/**/*.js"
+        ],
+        "assets": [
+            "pizzaria-server/sql-wasm-asset.wasm",
+            "pizzaria-server/node_modules/sql.js/dist/**/*",
+            "pizzaria-frontend/build/**/*",
+            "pizzaria-server/uploads/**/*"
+        ],
+        "targets": [
+            "node18-win-x64"
+        ]
+    },
+    "devDependencies": {
+        "pkg": "^5.8.1"
+    }
+}

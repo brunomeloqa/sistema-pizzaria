@@ -1,0 +1,17 @@
+Bugs/Melhorias:
+    4. Buscar por 04 é diferente de 4
+    5. Layout impressão está compartilhado entre cozinha e entrega
+    6. Adicionar tipo de atendimento na comanda da cozinha 
+    7. Observação do cliente nao mostra o endereço de entrega
+    8. Adicionar desconto e total com desconto 
+    9. Exportar cardapio esta gerando dados em ordem incorreta, não seguindo o id dos produtos
+
+Versão mobile
+
+Impressão
+    Quando for um cliente no pc verificar se ele tem impressora conectada ou não, caso negativo mandar para servidor imprimir
+    Se for mobile mandar para servidor a impressão
+
+
+Controle de estoque
+    Sistema de controle de estoque de produtos
