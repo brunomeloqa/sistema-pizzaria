@@ -15,6 +15,7 @@ const FluxoCaixa = () => {
     const [showModalPedido, setShowModalPedido] = useState(false);
     const [filtroTipoPedido, setFiltroTipoPedido] = useState('Todos');
     const [filtroPagamento, setFiltroPagamento] = useState('Todos');
+    const [mostrarValores, setMostrarValores] = useState(true);
 
     const handleOpenPedido = async (id) => {
         try {
@@ -183,7 +184,18 @@ const FluxoCaixa = () => {
                 `}
             </style>
 
-            <h2 className="no-print">💰 Gestão de Fluxo de Caixa</h2>
+            <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' }}>
+                <h2 style={{ margin: 0 }}>💰 Gestão de Fluxo de Caixa</h2>
+                {caixaAberto && (
+                    <button 
+                        onClick={() => setMostrarValores(!mostrarValores)}
+                        style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', padding: 0 }}
+                        title={mostrarValores ? "Ocultar Valores" : "Mostrar Valores"}
+                    >
+                        {mostrarValores ? "👁️" : "🙈"}
+                    </button>
+                )}
+            </div>
 
             {!caixaAberto ? (
                 /* TELA DE ABERTURA */
@@ -205,16 +217,16 @@ const FluxoCaixa = () => {
                     <div style={styles.gridCards}>
                         <div style={{ ...styles.card, borderLeft: '8px solid #28a745' }}>
                             <small>DINHEIRO EM CAIXA</small>
-                            <h2>R$ {getSaldoPorMetodo('Dinheiro').toFixed(2)}</h2>
+                            <h2>{mostrarValores ? `R$ ${getSaldoPorMetodo('Dinheiro').toFixed(2)}` : 'R$ ----'}</h2>
                         </div>
                         <div style={{ ...styles.card, borderLeft: '8px solid #17a2b8' }}>
                             <small>SALDO DO DIA (LÍQUIDO)</small>
-                            <h2>R$ {getSaldoLiquidoDoDia().toFixed(2)}</h2>
+                            <h2>{mostrarValores ? `R$ ${getSaldoLiquidoDoDia().toFixed(2)}` : 'R$ ----'}</h2>
                         </div>
                         {metodos.map(m => (
                             <div key={m.id} style={{ ...styles.card, borderLeft: '8px solid #007bff' }}>
                                 <small>{m.nome.toUpperCase()}</small>
-                                <h2>R$ {getSaldoPorMetodo(m.nome).toFixed(2)}</h2>
+                                <h2>{mostrarValores ? `R$ ${getSaldoPorMetodo(m.nome).toFixed(2)}` : 'R$ ----'}</h2>
                             </div>
                         ))}
                     </div>
