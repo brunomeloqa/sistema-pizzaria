@@ -1,17 +1,20 @@
 Bugs/Melhorias:
-    4. Buscar por 04 é diferente de 4
-    5. Layout impressão está compartilhado entre cozinha e entrega
-    6. Adicionar tipo de atendimento na comanda da cozinha 
-    7. Observação do cliente nao mostra o endereço de entrega
-    8. Adicionar desconto e total com desconto 
-    9. Exportar cardapio esta gerando dados em ordem incorreta, não seguindo o id dos produtos
+    1. Layout impressão está compartilhado entre cozinha e entrega
+    2. Adicionar tipo de atendimento na comanda da cozinha 
+    3. Observação do cliente nao mostra o endereço de entrega
+    4. Adicionar desconto e total com desconto 
+    5. Fluxo de caixa - opção para ver histórico
+    6. Adicionar botão para reimprimir comanda no pedido no fluxo de caixa
+    7. Fluxo de caixa - Botão para ocultar valores
+    8. Monitor Cozinha - Ao finalizar pagamento não tem opção para descontos
+    9. Fluxo de caixa - No card de dinheiro, não contabilizar o dinheiro da abertura do caixa
+    10. Fluxo de caixa - Quando fazemos pagamento ao entregador não exibe no fluxo
+    11. Remover limite de pagamento ao entregador, poder deixar negativo
+    12. Area para lançar pagamentos aos funcionarios 
+
+Gerar EXE no Linux
 
 Versão mobile
-
-Impressão
-    Quando for um cliente no pc verificar se ele tem impressora conectada ou não, caso negativo mandar para servidor imprimir
-    Se for mobile mandar para servidor a impressão
-
 
 Controle de estoque
     Sistema de controle de estoque de produtos
