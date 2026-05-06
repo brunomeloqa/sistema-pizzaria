@@ -16,6 +16,9 @@ const FluxoCaixa = () => {
     const [filtroTipoPedido, setFiltroTipoPedido] = useState('Todos');
     const [filtroPagamento, setFiltroPagamento] = useState('Todos');
     const [mostrarValores, setMostrarValores] = useState(true);
+    const [diasHistorico, setDiasHistorico] = useState([]);
+    const [diaSelecionado, setDiaSelecionado] = useState('');
+    const [isHistoricoVisualizado, setIsHistoricoVisualizado] = useState(false);
 
     const handleOpenPedido = async (id) => {
         try {
@@ -44,12 +47,46 @@ const FluxoCaixa = () => {
                 const resRel = await apiService.getRelatorioCaixa();
                 setRelatorio(resRel.data);
             }
+
+            const resDias = await apiService.getHistoricoDiasCaixa();
+            setDiasHistorico(resDias.data?.data || []);
         } catch (err) {
             console.error("Erro ao carregar caixa:", err);
         }
     };
 
     useEffect(() => { carregarDados(); }, []);
+
+    useEffect(() => {
+        if (!diaSelecionado) {
+            setIsHistoricoVisualizado(false);
+            carregarDados();
+        } else {
+            setIsHistoricoVisualizado(true);
+            carregarHistoricoDia(diaSelecionado);
+        }
+    }, [diaSelecionado]);
+
+    const carregarHistoricoDia = async (data) => {
+        try {
+            const res = await apiService.getRelatorioCaixaDia(data);
+            setRelatorio(res.data);
+            
+            const saldosGerados = [];
+            res.data.itens.forEach(item => {
+                saldosGerados.push({
+                    tipo: item.tipo,
+                    total: item.valor,
+                    metodo_nome: item.metodo
+                });
+            });
+            setDadosSaldos(saldosGerados);
+            setCaixaAberto(true);
+        } catch (err) {
+            console.error("Erro ao carregar historico:", err);
+            alert("Erro ao carregar o histórico do dia.");
+        }
+    };
 
     const handleMovimentacao = async (e, tipoManual = null) => {
         if(e) e.preventDefault();
@@ -76,13 +113,17 @@ const FluxoCaixa = () => {
 
     const prepararImpressao = async (tipo) => {
         try {
-            const res = await apiService.getRelatorioCaixa();
-            setRelatorio(res.data);
+            let relatorioParaImpressao = relatorio;
+            if (!isHistoricoVisualizado) {
+                const res = await apiService.getRelatorioCaixa();
+                setRelatorio(res.data);
+                relatorioParaImpressao = res.data;
+            }
             
             // Envia para a impressora térmica do servidor
             await apiService.imprimirRelatorioCaixa({
                 tipoImpressao: tipo,
-                relatorio: res.data
+                relatorio: relatorioParaImpressao
             });
             alert("Comando de impressão enviado para a impressora!");
         } catch (err) {
@@ -96,6 +137,7 @@ const FluxoCaixa = () => {
         return dadosSaldos
             .filter(item => item.metodo_nome === metodoNome || (metodoNome === 'Dinheiro' && item.metodo_nome === 'Dinheiro/Geral'))
             .reduce((acc, item) => {
+                if (item.tipo === 'Abertura' && metodoNome === 'Dinheiro') return acc;
                 if (['Entrada', 'Suprimento', 'Abertura'].includes(item.tipo)) return acc + item.total;
                 if (['Sangria', 'Saída'].includes(item.tipo)) return acc - item.total;
                 return acc;
@@ -186,6 +228,24 @@ const FluxoCaixa = () => {
 
             <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' }}>
                 <h2 style={{ margin: 0 }}>💰 Gestão de Fluxo de Caixa</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <label style={{ fontSize: '14px', color: '#555', fontWeight: 'bold' }}>Histórico:</label>
+                    <input 
+                        type="date" 
+                        value={diaSelecionado} 
+                        onChange={(e) => setDiaSelecionado(e.target.value)} 
+                        style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '16px' }}
+                    />
+                    {diaSelecionado && (
+                        <button 
+                            onClick={() => setDiaSelecionado('')} 
+                            style={{ background: '#007bff', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}
+                            title="Voltar para Hoje"
+                        >
+                            Hoje
+                        </button>
+                    )}
+                </div>
                 {caixaAberto && (
                     <button 
                         onClick={() => setMostrarValores(!mostrarValores)}
@@ -216,8 +276,8 @@ const FluxoCaixa = () => {
                 <div className="no-print">
                     <div style={styles.gridCards}>
                         <div style={{ ...styles.card, borderLeft: '8px solid #28a745' }}>
-                            <small>DINHEIRO EM CAIXA</small>
-                            <h2>{mostrarValores ? `R$ ${getSaldoPorMetodo('Dinheiro').toFixed(2)}` : 'R$ ----'}</h2>
+                            <small>ABERTURA DO CAIXA</small>
+                            <h2>{mostrarValores ? `R$ ${relatorio.abertura.toFixed(2)}` : 'R$ ----'}</h2>
                         </div>
                         <div style={{ ...styles.card, borderLeft: '8px solid #17a2b8' }}>
                             <small>SALDO DO DIA (LÍQUIDO)</small>
@@ -231,22 +291,24 @@ const FluxoCaixa = () => {
                         ))}
                     </div>
 
-                    <div style={styles.formContainer}>
-                        <h4>Suprimento / Sangria Manual</h4>
-                        <form onSubmit={handleMovimentacao} style={styles.formLine}>
-                            <select value={form.tipo} onChange={e => setForm({...form, tipo: e.target.value})} style={styles.input}>
-                                <option value="Suprimento">Suprimento (+ Entrou)</option>
-                                <option value="Sangria">Sangria (- Retirou)</option>
-                            </select>
-                            <input type="number" step="0.01" placeholder="Valor R$" value={form.valor} onChange={e => setForm({...form, valor: e.target.value})} style={styles.input} />
-                            <input type="text" placeholder="Motivo/Descrição" value={form.descricao} onChange={e => setForm({...form, descricao: e.target.value})} style={{ ...styles.input, flex: 2 }} />
-                            <button type="submit" style={styles.btnAcao}>REGISTRAR</button>
-                        </form>
-                    </div>
+                    {!isHistoricoVisualizado && (
+                        <div style={styles.formContainer}>
+                            <h4>Suprimento / Sangria Manual</h4>
+                            <form onSubmit={handleMovimentacao} style={styles.formLine}>
+                                <select value={form.tipo} onChange={e => setForm({...form, tipo: e.target.value})} style={styles.input}>
+                                    <option value="Suprimento">Suprimento (+ Entrou)</option>
+                                    <option value="Sangria">Sangria (- Retirou)</option>
+                                </select>
+                                <input type="number" step="0.01" placeholder="Valor R$" value={form.valor} onChange={e => setForm({...form, valor: e.target.value})} style={styles.input} />
+                                <input type="text" placeholder="Motivo/Descrição" value={form.descricao} onChange={e => setForm({...form, descricao: e.target.value})} style={{ ...styles.input, flex: 2 }} />
+                                <button type="submit" style={styles.btnAcao}>REGISTRAR</button>
+                            </form>
+                        </div>
+                    )}
 
                     <div style={styles.tabelaContainer}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                            <h4 style={{ margin: 0 }}>Histórico de Movimentações Atuais</h4>
+                            <h4 style={{ margin: 0 }}>Histórico de Movimentações {isHistoricoVisualizado ? 'do Dia Selecionado' : 'Atuais'}</h4>
                             <div style={{ display: 'flex', gap: '10px' }}>
                                 <select value={filtroTipoPedido} onChange={e => setFiltroTipoPedido(e.target.value)} style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '13px' }}>
                                     <option value="Todos">Todos os Tipos</option>
@@ -290,7 +352,7 @@ const FluxoCaixa = () => {
                                                     color: ['Entrada', 'Suprimento', 'Abertura'].includes(item.tipo) ? '#155724' : '#721c24',
                                                     padding: '2px 6px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold'
                                                 }}>
-                                                    {item.tipo}
+                                                    {item.tipo === 'Saída' && item.descricao.includes('Pagamento de Repasse') ? 'Pagamento' : item.tipo}
                                                 </span>
                                             </td>
                                             <td style={{ padding: '8px' }}>
@@ -346,7 +408,9 @@ const FluxoCaixa = () => {
                     <div style={styles.footerAcoes}>
                         <button onClick={() => prepararImpressao('saldo')} style={styles.btnSecundario}>🖨️ IMPRIMIR SALDO</button>
                         <button onClick={() => prepararImpressao('completo')} style={styles.btnSecundario}>📜 RELATÓRIO DETALHADO</button>
-                        <button onClick={() => handleEncerrarExpediente()} style={styles.btnFechar}>🔒 ENCERRAR EXPEDIENTE</button>
+                        {!isHistoricoVisualizado && (
+                            <button onClick={() => handleEncerrarExpediente()} style={styles.btnFechar}>🔒 ENCERRAR EXPEDIENTE</button>
+                        )}
                     </div>
                 </div>
             )}

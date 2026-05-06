@@ -108,7 +108,7 @@ router.get('/relatorio-fechamento', (req, res) => {
     });
 });
 
-//Fechamento de caixa
+// Fechamento de caixa
 router.post('/fechar-caixa', (req, res) => {
     const database = db();
 
@@ -129,6 +129,78 @@ router.post('/fechar-caixa', (req, res) => {
                 res.json({ message: "Caixa encerrado e arquivado com sucesso!" });
             });
         });
+    });
+});
+
+// Obter dias com fechamento de caixa
+router.get('/historico-dias', (req, res) => {
+    const database = db();
+    const sql = `
+        SELECT DISTINCT date(data_movimentacao) as data
+        FROM HistoricoFluxoCaixa
+        ORDER BY data DESC
+    `;
+    database.all(sql, [], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ data: rows.map(r => r.data) });
+    });
+});
+
+// Obter relatório de um dia específico do histórico
+router.get('/historico-dia/:data', (req, res) => {
+    const database = db();
+    const { data } = req.params;
+    
+    const sql = `
+        SELECT f.*, IFNULL(m.nome, 'Dinheiro/Geral') as metodo 
+        FROM HistoricoFluxoCaixa f
+        LEFT JOIN ModosDePagamento m ON f.metodo_pagamento_id = m.id
+        WHERE date(f.data_movimentacao) = ?
+        ORDER BY f.data_movimentacao ASC
+    `;
+    
+    database.all(sql, [data], (err, itens) => {
+        if (err) return res.status(500).json({ error: err.message });
+        
+        const aberturaItem = itens.find(i => i.tipo === 'Abertura');
+        const valorAbertura = aberturaItem ? aberturaItem.valor : 0;
+        
+        const pedidoIds = [];
+        itens.forEach(item => {
+            if (item.descricao) {
+                const match = item.descricao.match(/Pedido #(\d+)/);
+                if (match) {
+                    item.pedido_id = parseInt(match[1]);
+                    pedidoIds.push(item.pedido_id);
+                }
+            }
+        });
+
+        if (pedidoIds.length > 0) {
+            const placeholders = pedidoIds.map(() => '?').join(',');
+            const sqlPedidos = `SELECT p.id, p.tipo, p.nome_cliente, c.nome as c_nome, e.nome as entregador_nome, p.observacao
+                                FROM Pedido p 
+                                LEFT JOIN Cliente c ON p.cliente_id = c.id
+                                LEFT JOIN Entregador e ON p.entregador_id = e.id
+                                WHERE p.id IN (${placeholders})`;
+            database.all(sqlPedidos, pedidoIds, (err, pedidos) => {
+                const pedidosMap = {};
+                if (!err && pedidos) {
+                    pedidos.forEach(p => pedidosMap[p.id] = p);
+                }
+                itens.forEach(item => {
+                    if (item.pedido_id && pedidosMap[item.pedido_id]) {
+                        item.pedido_tipo = pedidosMap[item.pedido_id].tipo;
+                        item.cliente_nome = pedidosMap[item.pedido_id].c_nome || pedidosMap[item.pedido_id].nome_cliente;
+                        item.entregador_nome = pedidosMap[item.pedido_id].entregador_nome;
+                        item.observacao_pedido = pedidosMap[item.pedido_id].observacao;
+                    }
+                });
+                res.json({ abertura: valorAbertura, itens: itens });
+            });
+        } else {
+            res.json({ abertura: valorAbertura, itens: itens });
+        }
     });
 });
 

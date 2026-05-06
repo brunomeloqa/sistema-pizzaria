@@ -5,23 +5,82 @@ import OrderPrintView from './OrderPrintView';
 import { allPrintableElements, defaultPrintOrderKeys, STATUS_COLUMNS } from '../constants/printConstants';
 import { printHTMLContent } from '../utils/printUtils';
 import MultiPagamento from './shared/MultiPagamento';
+import Comanda from './shared/Comanda';
 
 // --- Componente de Modal de Detalhes (Simplificado) ---
 const OrderDetailsModal = ({ pedido, onClose, printConfig, orderArray }) => {
     if (!pedido) return null;
 
-    // Funções de placeholder para a impressão. 
-    // Você pode integrar com a sua função printHTMLContent aqui.
+    const gerarHtmlImpressao = (tipoComanda) => {
+        const obs = pedido.observacao ? `Obs: ${pedido.observacao}` : '';
+        
+        // Em MonitorCozinha os itens já vêm do backend. Vamos tentar agrupar, mas se não tiver categoria, não agrupa.
+        const itensHtml = (pedido.itens || []).map(i => `
+            <div style="display:flex; justify-content:space-between; border-bottom:1px dashed #ccc; padding-bottom:5px; margin-bottom:5px;">
+                <span>${i.quantidade || 1}x ${i.nome}</span>
+                ${tipoComanda === 'Entrega' ? `<span>R$ ${Number(i.valor * (i.quantidade || 1)).toFixed(2)}</span>` : ''}
+            </div>
+            ${i.observacao ? `<div style="font-size:10px; color:#555;">- ${i.observacao}</div>` : ''}
+        `).join('');
+
+        const endHtml = pedido.tipo === 'Delivery' && pedido.endereco_entrega ? `
+            <hr />
+            <strong>CLIENTE:</strong> ${pedido.cliente_nome || pedido.nome_cliente || 'N/A'}<br />
+            <strong>TEL:</strong> ${pedido.cliente_telefone || 'N/A'}<br />
+            <strong>ENDEREÇO:</strong> ${pedido.endereco_entrega}
+            ${pedido.complemento_entrega ? `<br />COMP: ${pedido.complemento_entrega}` : ''}
+        ` : (pedido.cliente_nome || pedido.nome_cliente ? `<hr /><strong>CLIENTE:</strong> ${pedido.cliente_nome || pedido.nome_cliente}` : '');
+
+        const subtotal = pedido.valor_total || 0; // Valor total sem taxa (ou com, dependendo do db). No db, valor_total é o final.
+        const totalFinal = pedido.valor_total || 0;
+        const valorTaxa = pedido.taxa_servico || 0;
+        const descontoValor = pedido.desconto || 0;
+
+        let trocoTexto = '';
+        if (pedido.observacao && pedido.observacao.includes("Troco para R$")) {
+            const match = pedido.observacao.match(/Troco para R\$ ?([0-9.,]+)/);
+            if (match) {
+                const trocoPara = parseFloat(match[1].replace(',', '.'));
+                if (trocoPara > totalFinal) {
+                    trocoTexto = `<br /><div>Troco para: R$ ${trocoPara.toFixed(2)}<br />Entregar: R$ ${(trocoPara - totalFinal).toFixed(2)}</div>`;
+                }
+            }
+        }
+
+        const financeiroHtml = tipoComanda === 'Entrega' ? `
+            <hr />
+            <div style="text-align:right; font-size:14px;">
+                ${valorTaxa > 0 ? `<div>Taxa: R$ ${Number(valorTaxa).toFixed(2)}</div>` : ''}
+                ${descontoValor > 0 ? `<div>Desconto: -R$ ${Number(descontoValor).toFixed(2)}</div>` : ''}
+                <strong style="font-size: 16px;">TOTAL: R$ ${Number(totalFinal).toFixed(2)}</strong>
+                ${trocoTexto}
+            </div>
+        ` : '';
+
+        return `
+            <div style="font-family: monospace; font-size: 12px; width: 300px; padding: 10px;">
+                <h2 style="text-align:center; margin:0; font-size:16px;">PEDIDO #${pedido.id}</h2>
+                <div style="text-align:center; font-size:12px; margin-bottom:10px;">${pedido.tipo} ${pedido.mesa_numero ? '- Mesa ' + pedido.mesa_numero : ''}</div>
+                ${endHtml}
+                <hr />
+                <strong>ITENS:</strong><br />
+                ${itensHtml}
+                ${financeiroHtml}
+                ${obs ? `<hr /><div>${obs}</div>` : ''}
+                <hr />
+                <div style="text-align:center; font-size:10px;">
+                    Impresso via Monitor - Comanda de ${tipoComanda}
+                </div>
+            </div>
+        `;
+    };
+
     const imprimirCozinha = () => {
-        console.log("Imprimindo comanda da cozinha para o pedido:", pedido.id);
-        // Exemplo: printHTMLContent(gerarHtmlCozinha(pedido));
-        alert("Ação de Imprimir Comanda da Cozinha disparada!");
+        printHTMLContent(gerarHtmlImpressao('Cozinha'), 'Comanda de Cozinha');
     };
 
     const imprimirEntrega = () => {
-        console.log("Imprimindo comanda de entrega para o pedido:", pedido.id);
-        // Exemplo: printHTMLContent(gerarHtmlEntrega(pedido));
-        alert("Ação de Imprimir Comanda de Entrega disparada!");
+        printHTMLContent(gerarHtmlImpressao('Entrega'), 'Comanda de Entrega');
     };
 
     return (
@@ -227,31 +286,50 @@ const MonitorCozinha = () => {
             return;
         }
 
-        // Delivery / Balcão: abre modal de finalização.
-        // Se já foi pago (total_pagamentos > 0), a interface vai ocultar a seleção financeira.
-        setOrderToFinalize(pedido);
-        
-        let initialPaymentMode = '';
-        if (pedido.modo_pagamento_id) {
-            initialPaymentMode = pedido.modo_pagamento_id;
-        } else if (modosPagamento.length > 0) {
-            initialPaymentMode = modosPagamento[0].id;
+        try {
+            setLoading(true);
+            const res = await apiService.buscarPedidoDetalhes(pedido.id);
+            setLoading(false);
+            
+            if (res.data && res.data.data) {
+                const pedidoCompleto = res.data.data;
+                // Mantém total_pagamentos que vem da rota /pendentes para saber se já estava pago
+                pedidoCompleto.total_pagamentos = pedido.total_pagamentos;
+                
+                setOrderToFinalize(pedidoCompleto);
+                
+                let initialPaymentMode = '';
+                if (pedidoCompleto.modo_pagamento_id) {
+                    initialPaymentMode = pedidoCompleto.modo_pagamento_id;
+                } else if (modosPagamento.length > 0) {
+                    initialPaymentMode = modosPagamento[0].id;
+                }
+
+                setPagamentos([
+                    { metodo_pagamento_id: initialPaymentMode, valor: pedidoCompleto.valor_total || 0 }
+                ]);
+
+                setIsPaymentModalOpen(true);
+            }
+        } catch (error) {
+            console.error('Erro ao buscar detalhes para finalizar:', error);
+            setMensagem('Erro ao buscar detalhes do pedido.');
+            setLoading(false);
         }
-
-        setPagamentos([
-            { metodo_pagamento_id: initialPaymentMode, valor: pedido.valor_total || 0 }
-        ]);
-
-        setIsPaymentModalOpen(true);
     };
 
-    const confirmPaymentAndFinalize = async () => {
+    const confirmPaymentAndFinalize = async (dadosComanda) => {
         const isJaPago = orderToFinalize?.total_pagamentos > 0;
+        
+        // Agora usamos os dados calculados pelo componente Comanda
+        const novoTotalPedido = dadosComanda.totalFinal;
+        const descontoFinalCalculado = dadosComanda.descontoValor;
+        const taxaCalculada = dadosComanda.valorTaxa;
+        
         const totalPago = pagamentos.reduce((s, p) => s + Number(p.valor || 0), 0);
-        const totalPedido = Number(orderToFinalize?.valor_total || 0);
 
         if (!isJaPago) {
-            if (totalPago < (totalPedido - 0.01)) {
+            if (totalPago < (novoTotalPedido - 0.01)) {
                 return setMensagem('O total pago é menor que o total do pedido!');
             }
             if (pagamentos.some(p => !p.metodo_pagamento_id)) {
@@ -261,11 +339,25 @@ const MonitorCozinha = () => {
 
         try {
             setLoading(true);
+            
+            // Lógica de troco para a observação
+            let obsFinal = orderToFinalize.observacao || '';
+            if (dadosComanda.trocoPara) {
+                const trocoNum = Number(dadosComanda.trocoPara);
+                if (trocoNum > novoTotalPedido) {
+                    const trocoLevar = (trocoNum - novoTotalPedido).toFixed(2);
+                    const msgTroco = `Troco para R$ ${trocoNum.toFixed(2)} (Enviar R$ ${trocoLevar})`;
+                    obsFinal = obsFinal ? `${obsFinal} | ${msgTroco}` : msgTroco;
+                }
+            }
+
             await apiService.finalizarPedido({
                 pedido_id: orderToFinalize.id,
                 mesa_id: null, // Delivery/Balcão
-                valor_total: orderToFinalize.valor_total,
-                desconto: orderToFinalize.desconto || 0,
+                valor_total: novoTotalPedido,
+                desconto: descontoFinalCalculado,
+                taxa_servico: taxaCalculada,
+                observacao: obsFinal || null,
                 pagamentos: isJaPago ? [] : pagamentos,
                 entregador_id: selectedEntregadorId || null,
                 cliente_id: orderToFinalize.cliente_id || null,
@@ -484,72 +576,57 @@ const handleRevertStatus = async (pedidoId, currentStatus) => {
 
             {isPaymentModalOpen && orderToFinalize && (
                 <div style={modalStyles.overlay}>
-                    <div style={modalStyles.content}>
-                        <div style={modalStyles.header}>
-                            <h2 style={{ margin: 0, fontSize: '20px', color: '#333' }}>
-                                Confirmar Entrega - Pedido #{orderToFinalize.id}
-                            </h2>
-                            <button onClick={() => setIsPaymentModalOpen(false)} style={modalStyles.closeIcon}>✖</button>
+                    <div style={{ width: '90%', maxWidth: '500px', maxHeight: '95vh', display: 'flex', flexDirection: 'column', background: 'var(--dark)', borderRadius: '12px', overflow: 'hidden' }}>
+                        
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '10px 10px 0 0', background: 'var(--dark)' }}>
+                            <button onClick={() => setIsPaymentModalOpen(false)} style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '20px', cursor: 'pointer' }}>✖</button>
                         </div>
-                        <div style={modalStyles.body}>
-                            <p style={{ fontSize: '16px', margin: '5px 0' }}><strong>Cliente:</strong> {orderToFinalize.cliente_nome || 'N/A'}</p>
-                            <p style={{ fontSize: '18px', color: '#e74c3c', margin: '5px 0' }}><strong>Valor Total:</strong> R$ {Number(orderToFinalize.valor_total || 0).toFixed(2)}</p>
-                            
-                            {/* Mostrar opção de entregador apenas se for Delivery (tem cliente associado e não é de mesa) */}
-                            {(!orderToFinalize.mesa_id && !!orderToFinalize.cliente_nome) && (
-                                <div style={{ marginTop: '20px' }}>
-                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>🏍️ Informar Entregador (Opcional):</label>
-                                    <input 
-                                        type="text" 
-                                        list="entregadores-list"
-                                        placeholder="Selecione ou digite o Entregador"
-                                        value={selectedEntregadorId}
-                                        onChange={(e) => setSelectedEntregadorId(e.target.value)}
-                                        style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid #ccc', fontSize: '16px', boxSizing: 'border-box' }}
-                                    />
-                                    <datalist id="entregadores-list">
-                                        {entregadoresAtivos.map(ent => (
-                                            <option key={ent.id} value={ent.id}>{ent.nome}</option>
-                                        ))}
-                                    </datalist>
-                                </div>
-                            )}
 
-                                {/* MultiPagamento só é exibido se NÃO tiver sido pago previamente */}
-                            {!orderToFinalize.total_pagamentos && (
-                                <div style={{ marginTop: '20px' }}>
-                                    <MultiPagamento 
-                                        metodos={modosPagamento} 
-                                        totalPedido={Number(orderToFinalize.valor_total || 0)} 
-                                        tipoPedido={orderToFinalize.tipo}
-                                        onChange={setPagamentos} 
-                                    />
-                                </div>
-                            )}
-                            
-                            {orderToFinalize.total_pagamentos > 0 && (
-                                <div style={{ marginTop: '20px', padding: '15px', background: '#d4edda', color: '#155724', borderRadius: '8px', border: '1px solid #c3e6cb', textAlign: 'center' }}>
-                                    <strong style={{ fontSize: '16px' }}>✔️ PEDIDO JÁ PAGO</strong>
-                                    <p style={{ margin: '5px 0 0', fontSize: '13px' }}>Nenhum pagamento adicional é necessário no fechamento.</p>
-                                </div>
-                            )}
-                        </div>
-                        <div style={modalStyles.footer}>
-                            <button 
-                                className="btn-success" 
-                                style={{...modalStyles.btnAction, backgroundColor: '#2ecc71', color: '#fff', border: 'none'}} 
-                                onClick={confirmPaymentAndFinalize}
-                                disabled={loading}
+                        <div style={{ overflowY: 'auto', flex: 1, padding: '0 20px 20px 20px' }}>
+                            <Comanda
+                                titulo={`Confirmação - #${orderToFinalize.id}`}
+                                itens={(orderToFinalize.itens || []).map(i => ({...i, preco: i.valor}))}
+                                total={Number(orderToFinalize.valor_total || 0) + Number(orderToFinalize.desconto || 0)}
+                                ocultarRemover={true}
+                                botaoTexto={loading ? 'Aguarde...' : '✅ CONFIRMAR'}
+                                desabilitado={loading}
+                                onFinalizar={confirmPaymentAndFinalize}
                             >
-                                {loading ? 'Aguarde...' : '✅ Confirmar Entrega'}
-                            </button>
-                            <button 
-                                className="btn-secondary" 
-                                style={{...modalStyles.btnAction, backgroundColor: '#95a5a6', color: '#fff', border: 'none'}} 
-                                onClick={() => setIsPaymentModalOpen(false)}
-                            >
-                                Cancelar
-                            </button>
+                                <div style={{ marginTop: '10px', paddingTop: '15px', borderTop: '1px solid #444' }}>
+                                    <p style={{ fontSize: '14px', color: '#fff', margin: '0 0 10px 0' }}>
+                                        <strong>Cliente:</strong> {orderToFinalize.cliente_nome || orderToFinalize.nome_cliente || 'Balcão'}
+                                    </p>
+                                    
+                                    {(!orderToFinalize.mesa_id && (orderToFinalize.cliente_nome || orderToFinalize.endereco_entrega)) && (
+                                        <div style={{ marginBottom: '15px' }}>
+                                            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#ccc', fontSize: '13px' }}>🏍️ Entregador:</label>
+                                            <select 
+                                                value={selectedEntregadorId} 
+                                                onChange={(e) => setSelectedEntregadorId(e.target.value)}
+                                                style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #555', background: '#333', color: '#fff', fontSize: '14px' }}
+                                            >
+                                                <option value="">Selecione o entregador...</option>
+                                                {entregadoresAtivos.map(e => (
+                                                    <option key={e.id} value={e.id}>{e.nome}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
+
+                                    {!orderToFinalize.total_pagamentos ? (
+                                        <MultiPagamento 
+                                            metodos={modosPagamento} 
+                                            totalPedido={Number(orderToFinalize.valor_total || 0)} 
+                                            tipoPedido={orderToFinalize.tipo}
+                                            onChange={setPagamentos} 
+                                        />
+                                    ) : (
+                                        <div style={{ padding: '10px', background: '#d4edda', color: '#155724', borderRadius: '4px', textAlign: 'center', marginTop: '10px' }}>
+                                            <strong>✔️ PEDIDO JÁ PAGO</strong>
+                                        </div>
+                                    )}
+                                </div>
+                            </Comanda>
                         </div>
                     </div>
                 </div>

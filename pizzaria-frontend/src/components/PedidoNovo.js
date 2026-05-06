@@ -548,7 +548,7 @@ const PedidoNovo = () => {
                 <div style={{ flex: 1, background: 'var(--dark)', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column' }}>
                     <Comanda
                         titulo={tipoPedido}
-                        itens={itensAgrupados}
+                        itens={carrinho}
                         total={totalCarrinho}
                         onRemover={removerDoCarrinho}
                         onFinalizar={finalizarPedido}

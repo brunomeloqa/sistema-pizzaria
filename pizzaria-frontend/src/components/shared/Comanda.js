@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-const Comanda = ({ itens, onRemover, total: subtotal, titulo = "Pedido", children, botaoTexto, onFinalizar, desabilitado, onImprimir }) => {
+const Comanda = ({ itens, onRemover, total: subtotal, titulo = "Pedido", children, botaoTexto, onFinalizar, desabilitado, onImprimir, ocultarRemover }) => {
     const [taxaServico, setTaxaServico] = useState(0);
     const [descontoValor, setDescontoValor] = useState(0);
     const [descontoPorcentagem, setDescontoPorcentagem] = useState(0);
@@ -62,7 +62,9 @@ const Comanda = ({ itens, onRemover, total: subtotal, titulo = "Pedido", childre
                     <div key={idx} className="comanda-linha">
                         <div style={{ flex: 1 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <button onClick={() => onRemover(idx)} className="btn-remover-item">×</button>
+                                {!ocultarRemover && (
+                                    <button onClick={() => onRemover(idx)} className="btn-remover-item">×</button>
+                                )}
                                 <strong>{item.quantidade}x {item.nome}</strong>
                             </div>
                             {item.observacao && <div className="comanda-obs">{item.observacao}</div>}

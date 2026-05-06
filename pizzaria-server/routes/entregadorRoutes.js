@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { db } = require('../database');
 const { ensureAdmin } = require('../middleware/auth'); // Opcional: Proteger rotas
+const { getAgoraSP } = require('../utils/dateUtils');
 
 // 1. Listar todos os entregadores
 router.get('/', (req, res) => {
@@ -107,9 +108,7 @@ router.post('/:id/payout', ensureAdmin, (req, res) => {
         database.get("SELECT nome, saldo FROM Entregador WHERE id = ?", [id], (err, entregador) => {
             if (err || !entregador) return res.status(404).json({ error: "Entregador não encontrado." });
             
-            if (entregador.saldo < valor) {
-                return res.status(400).json({ error: "Saldo insuficiente para este pagamento." });
-            }
+            // Permite pagamento mesmo que o entregador fique com saldo negativo
 
             // 2. Registra o pagamento no histórico do entregador
             database.run("INSERT INTO HistoricoPagamentoEntregador (entregador_id, valor, descricao) VALUES (?, ?, ?)", [id, valor, descricao || null], function(errH) {
@@ -121,7 +120,8 @@ router.post('/:id/payout', ensureAdmin, (req, res) => {
 
                     // 4. Lança no fluxo de caixa (Saída)
                     const descCaixa = descricao || `Pagamento de Repasse: ${entregador.nome}`;
-                    database.run("INSERT INTO FluxoCaixa (tipo, valor, descricao) VALUES ('Saída', ?, ?)", [valor, descCaixa], function(errC) {
+                    const dataLocal = getAgoraSP();
+                    database.run("INSERT INTO FluxoCaixa (tipo, valor, descricao, data_movimentacao) VALUES ('Saída', ?, ?, ?)", [valor, descCaixa, dataLocal], function(errC) {
                         if (errC) console.error("Erro ao lançar saída no caixa:", errC);
                         
                         res.json({ message: "Pagamento realizado com sucesso e registrado no caixa!", novo_saldo: entregador.saldo - valor });

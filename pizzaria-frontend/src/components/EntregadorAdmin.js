@@ -127,9 +127,7 @@ const EntregadorAdmin = () => {
 
     const handleProcessPayment = async () => {
         if (!valorPagamento || parseFloat(valorPagamento) <= 0) return alert("Informe um valor válido.");
-        if (parseFloat(valorPagamento) > selectedEntregador.saldo) {
-            if (!window.confirm("O valor informado é maior que o saldo atual. Continuar?")) return;
-        }
+        // Sem limite de saldo
 
         try {
             await apiService.realizarPagamentoEntregador(selectedEntregador.id, { valor: parseFloat(valorPagamento) });
@@ -239,7 +237,7 @@ const EntregadorAdmin = () => {
                                     </td>
                                     <td style={{ padding: '10px' }}>
                                         <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                            <span style={{ color: e.saldo > 0 ? '#e67e22' : '#27ae60', fontWeight: 'bold', fontSize: '16px' }}>
+                                            <span style={{ color: e.saldo < 0 ? '#e74c3c' : (e.saldo > 0 ? '#e67e22' : '#27ae60'), fontWeight: 'bold', fontSize: '16px' }}>
                                                 R$ {Number(e.saldo || 0).toFixed(2)}
                                             </span>
                                             <button 
@@ -310,7 +308,7 @@ const EntregadorAdmin = () => {
                         <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
                                 <span style={{ fontSize: '14px', color: '#666' }}>Saldo Pendente</span>
-                                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#e67e22' }}>R$ {Number(selectedEntregador.saldo).toFixed(2)}</div>
+                                <div style={{ fontSize: '24px', fontWeight: 'bold', color: selectedEntregador.saldo < 0 ? '#e74c3c' : '#e67e22' }}>R$ {Number(selectedEntregador.saldo).toFixed(2)}</div>
                             </div>
                             <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
                                 <div>

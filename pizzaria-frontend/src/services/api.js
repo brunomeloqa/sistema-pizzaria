@@ -53,6 +53,8 @@ export const apiService = {
     getRelatorioCaixa: () => apiClient.get('/caixa/relatorio-fechamento'),
     postFecharCaixa: (data) => apiClient.post('/caixa/fechar-caixa', data),
     imprimirRelatorioCaixa: (data) => apiClient.post('/caixa/imprimir', data),
+    getHistoricoDiasCaixa: () => apiClient.get('/caixa/historico-dias'),
+    getRelatorioCaixaDia: (data) => apiClient.get(`/caixa/historico-dia/${data}`),
 
     // Pedidos
     listarPedidos: () => apiClient.get('/pedidos'),

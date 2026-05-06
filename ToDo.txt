@@ -1,18 +1,30 @@
 Bugs/Melhorias:
+    4. Adicionar desconto e total com desconto 
+    8. Monitor Cozinha - Ao finalizar pagamento não tem opção para descontos
+    11. Remover limite de pagamento ao entregador, poder deixar negativo
+    
+Impressão
     1. Layout impressão está compartilhado entre cozinha e entrega
     2. Adicionar tipo de atendimento na comanda da cozinha 
     3. Observação do cliente nao mostra o endereço de entrega
-    4. Adicionar desconto e total com desconto 
-    5. Fluxo de caixa - opção para ver histórico
     6. Adicionar botão para reimprimir comanda no pedido no fluxo de caixa
-    7. Fluxo de caixa - Botão para ocultar valores
-    8. Monitor Cozinha - Ao finalizar pagamento não tem opção para descontos
-    9. Fluxo de caixa - No card de dinheiro, não contabilizar o dinheiro da abertura do caixa
-    10. Fluxo de caixa - Quando fazemos pagamento ao entregador não exibe no fluxo
-    11. Remover limite de pagamento ao entregador, poder deixar negativo
+
+Tela de funcionarios
     12. Area para lançar pagamentos aos funcionarios 
+    13. Tela de funcionario -> cadastrar funcionarios
+    14. Tela de funcionarios -> ver lista de funcionarios
+    15. Tela de funcionarios -> editar funcionarios
+    16. Tela de funcionarios -> excluir funcionarios
+    17. Tela de funcionarios -> buscar funcionarios
+    18. Tela de funcionarios -> ordenar funcionarios
+    19. Tela de funcionarios -> filtrar funcionarios
+    20. Tela de funcionarios -> paginar funcionarios
+    21. Tela de funcionarios -> Lançar produtos
+    22. Tela de funcionarios -> Ver historico de lançamentos
+    23. Tela de funcionarios -> Pagamento/vale
 
 Gerar EXE no Linux
+
 
 Versão mobile
 
