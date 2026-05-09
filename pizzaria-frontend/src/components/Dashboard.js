@@ -11,6 +11,7 @@ import Relatorios from './Relatorios';
 import SalaoMonitor from './SalaoMonitor';
 import FluxoCaixa from './FluxoCaixa';
 import EntregadorAdmin from './EntregadorAdmin';
+import FuncionarioAdmin from './FuncionarioAdmin';
 
 // Mapeamento de rotas (sem requiredRole — controle vem do perfil)
 const ROUTE_MAP = {
@@ -21,6 +22,7 @@ const ROUTE_MAP = {
     'ADMIN_CLIENTES':    { component: ClienteAdmin,       label: '👥 Cadastro Clientes' },
     'ADMIN_PRODUTOS':    { component: CardapioAdmin,      label: '⚙️ Admin. Cardápio' },
     'ADMIN_ENTREGADORES':{ component: EntregadorAdmin,    label: '🛵 Entregadores' },
+    'ADMIN_FUNCIONARIOS':{ component: FuncionarioAdmin,   label: '👨‍🍳 Funcionários' },
     'ADMIN_RELATORIOS':  { component: Relatorios,         label: '📊 Relatórios' },
     'ADMIN_CONFIG':      { component: ConfigAdmin,        label: '⚙️ Configurações' },
 };

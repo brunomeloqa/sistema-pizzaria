@@ -20,6 +20,7 @@ const caixaRoutes = require('./routes/caixaRoutes');
 const entregadorRoutes = require('./routes/entregadorRoutes');
 const perfilRoutes = require('./routes/perfilRoutes');
 const cupomRoutes = require('./routes/cupomRoutes');
+const funcionarioRoutes = require('./routes/funcionarioRoutes');
 
 const { initDatabase } = require('./database');
 
@@ -58,6 +59,7 @@ app.use('/api/caixa', caixaRoutes);
 app.use('/api/entregadores', entregadorRoutes);
 app.use('/api/perfis', perfilRoutes);
 app.use('/api/cupons', cupomRoutes);
+app.use('/api/funcionarios', funcionarioRoutes);
 
 
 // Adicionando logs globais para depuração

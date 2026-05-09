@@ -268,6 +268,29 @@ const initDatabase = async () => {
             dados_json TEXT NOT NULL,
             data_atualizacao DATETIME DEFAULT (datetime('now', 'localtime'))
         );
+
+        CREATE TABLE IF NOT EXISTS Funcionario (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT NOT NULL,
+            funcao TEXT,
+            tipo_pagamento TEXT, -- 'Mensal' ou 'Diária'
+            valor_pagamento REAL DEFAULT 0,
+            saldo REAL DEFAULT 0,
+            ativo INTEGER DEFAULT 1
+        );
+
+        CREATE TABLE IF NOT EXISTS FuncionarioLancamento (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            funcionario_id INTEGER,
+            tipo TEXT, -- 'Crédito' ou 'Débito'
+            categoria TEXT, -- 'Diária', 'Salário', 'Vale', 'Pagamento', 'Produto'
+            valor REAL NOT NULL,
+            descricao TEXT,
+            data_lancamento DATETIME DEFAULT (datetime('now', '-3 hours')),
+            produto_id INTEGER,
+            FOREIGN KEY (funcionario_id) REFERENCES Funcionario(id),
+            FOREIGN KEY (produto_id) REFERENCES Produto(id)
+        );
     `);
 
     // Migrações manuais via JS (para bancos existentes)
@@ -415,6 +438,32 @@ const initDatabase = async () => {
         console.log("✅ Tabela 'RascunhoPedido' verificada/criada.");
     } catch (e) { }
 
+    // Migração: tabela Funcionario e FuncionarioLancamento
+    try {
+        db.run(`CREATE TABLE IF NOT EXISTS Funcionario (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT NOT NULL,
+            funcao TEXT,
+            tipo_pagamento TEXT,
+            valor_pagamento REAL DEFAULT 0,
+            saldo REAL DEFAULT 0,
+            ativo INTEGER DEFAULT 1
+        )`);
+        db.run(`CREATE TABLE IF NOT EXISTS FuncionarioLancamento (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            funcionario_id INTEGER,
+            tipo TEXT,
+            categoria TEXT,
+            valor REAL NOT NULL,
+            descricao TEXT,
+            data_lancamento DATETIME DEFAULT (datetime('now', '-3 hours')),
+            produto_id INTEGER,
+            FOREIGN KEY (funcionario_id) REFERENCES Funcionario(id),
+            FOREIGN KEY (produto_id) REFERENCES Produto(id)
+        )`);
+        console.log("✅ Tabelas de 'Funcionario' verificadas/criadas.");
+    } catch (e) { }
+
     db.run("INSERT OR IGNORE INTO Configuracoes (id, nome_pizzaria) VALUES (?, ?)", [1, 'Sua Pizzaria Aqui']);
 
     const configExists = db.exec("SELECT COUNT(*) FROM Configuracoes WHERE id = 1");
@@ -447,7 +496,7 @@ const initDatabase = async () => {
     }
 
     // Insert default profiles
-    const allTelas = '["FLUXO_CAIXA","NOVO_PEDIDO","MONITOR_COZINHA","SALAO","ADMIN_CLIENTES","ADMIN_PRODUTOS","ADMIN_ENTREGADORES","CUPONS","ADMIN_RELATORIOS","ADMIN_CONFIG"]';
+    const allTelas = '["FLUXO_CAIXA","NOVO_PEDIDO","MONITOR_COZINHA","SALAO","ADMIN_CLIENTES","ADMIN_PRODUTOS","ADMIN_ENTREGADORES","CUPONS","ADMIN_RELATORIOS","ADMIN_CONFIG","ADMIN_FUNCIONARIOS"]';
     const atendentesTelas = '["FLUXO_CAIXA","NOVO_PEDIDO","MONITOR_COZINHA","SALAO","ADMIN_CLIENTES","CUPONS"]';
     const cozinhaTelas = '["MONITOR_COZINHA"]';
 
@@ -464,10 +513,18 @@ const initDatabase = async () => {
         const perfilAdmin = db.exec("SELECT telas FROM Perfil WHERE nome = 'admin' LIMIT 1");
         if (perfilAdmin.length > 0 && perfilAdmin[0].values[0][0]) {
             const telasAtuais = JSON.parse(perfilAdmin[0].values[0][0]);
+            let updated = false;
             if (!telasAtuais.includes('CUPONS')) {
                 telasAtuais.push('CUPONS');
+                updated = true;
+            }
+            if (!telasAtuais.includes('ADMIN_FUNCIONARIOS')) {
+                telasAtuais.push('ADMIN_FUNCIONARIOS');
+                updated = true;
+            }
+            if (updated) {
                 db.run("UPDATE Perfil SET telas = ? WHERE nome = 'admin'", [JSON.stringify(telasAtuais)]);
-                console.log("✅ Tela CUPONS adicionada ao perfil admin.");
+                console.log("✅ Telas CUPONS / ADMIN_FUNCIONARIOS adicionadas ao perfil admin.");
             }
         }
     } catch (e) { console.log('Migração perfil admin CUPONS:', e.message); }

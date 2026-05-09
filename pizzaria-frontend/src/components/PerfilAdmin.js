@@ -9,6 +9,7 @@ const TELA_LABELS = {
     'ADMIN_CLIENTES':    '👥 Cadastro Clientes',
     'ADMIN_PRODUTOS':    '⚙️ Admin. Cardápio',
     'ADMIN_ENTREGADORES':'🛵 Entregadores',
+    'ADMIN_FUNCIONARIOS':'👨‍🍳 Funcionários',
     'ADMIN_RELATORIOS':  '📊 Relatórios',
     'ADMIN_CONFIG':      '⚙️ Configurações',
 };

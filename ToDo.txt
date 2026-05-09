@@ -8,18 +8,18 @@ Impressão
     6. Adicionar botão para reimprimir comanda no pedido no fluxo de caixa
 
 Tela de funcionarios
-    12. Area para lançar pagamentos aos funcionarios 
-    13. Tela de funcionario -> cadastrar funcionarios
-    14. Tela de funcionarios -> ver lista de funcionarios
-    15. Tela de funcionarios -> editar funcionarios
-    16. Tela de funcionarios -> excluir funcionarios
-    17. Tela de funcionarios -> buscar funcionarios
-    18. Tela de funcionarios -> ordenar funcionarios
-    19. Tela de funcionarios -> filtrar funcionarios
-    20. Tela de funcionarios -> paginar funcionarios
-    21. Tela de funcionarios -> Lançar produtos
-    22. Tela de funcionarios -> Ver historico de lançamentos
-    23. Tela de funcionarios -> Pagamento/vale
+    [X] 12. Area para lançar pagamentos aos funcionarios 
+    [X] 13. Tela de funcionario -> cadastrar funcionarios
+    [X] 14. Tela de funcionarios -> ver lista de funcionarios
+    [X] 15. Tela de funcionarios -> editar funcionarios
+    [X] 16. Tela de funcionarios -> excluir funcionarios
+    [X] 17. Tela de funcionarios -> buscar funcionarios
+    [X] 18. Tela de funcionarios -> ordenar funcionarios
+    [X] 19. Tela de funcionarios -> filtrar funcionarios
+    [X] 20. Tela de funcionarios -> paginar funcionarios
+    [X] 21. Tela de funcionarios -> Lançar produtos
+    [X] 22. Tela de funcionarios -> Ver historico de lançamentos
+    [X] 23. Tela de funcionarios -> Pagamento/vale
 
 Gerar EXE no Linux
 Comando para executar no linux
