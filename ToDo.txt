@@ -1,7 +1,5 @@
 Bugs/Melhorias:
-    4. Adicionar desconto e total com desconto 
-    8. Monitor Cozinha - Ao finalizar pagamento não tem opção para descontos
-    11. Remover limite de pagamento ao entregador, poder deixar negativo
+    
     
 Impressão
     1. Layout impressão está compartilhado entre cozinha e entrega
@@ -24,7 +22,14 @@ Tela de funcionarios
     23. Tela de funcionarios -> Pagamento/vale
 
 Gerar EXE no Linux
+Comando para executar no linux
+--------------------
+# Dá permissão de execução ao script
+chmod +x gerar_executavel.sh
 
+# Roda o script
+./gerar_executavel.sh
+--------------------
 
 Versão mobile
 
