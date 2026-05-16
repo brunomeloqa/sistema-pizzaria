@@ -160,6 +160,14 @@ export const apiService = {
     criarRascunho: (data) => apiClient.post('/pedidos/rascunhos', data),
     atualizarRascunho: (id, data) => apiClient.put(`/pedidos/rascunhos/${id}`, data),
     deletarRascunho: (id) => apiClient.delete(`/pedidos/rascunhos/${id}`),
+
+    // Funcionarios
+    listarFuncionarios: () => apiClient.get('/funcionarios'),
+    criarFuncionario: (data) => apiClient.post('/funcionarios', data),
+    atualizarFuncionario: (id, data) => apiClient.put(`/funcionarios/${id}`, data),
+    deletarFuncionario: (id) => apiClient.delete(`/funcionarios/${id}`),
+    getLancamentosFuncionario: (id) => apiClient.get(`/funcionarios/${id}/lancamentos`),
+    addLancamentoFuncionario: (id, data) => apiClient.post(`/funcionarios/${id}/lancamentos`, data),
 };
 
 
