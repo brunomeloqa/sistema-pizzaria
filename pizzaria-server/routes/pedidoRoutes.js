@@ -193,8 +193,8 @@ router.post('/', ensureAdmin, (req, res) => {
                                                         [pedido_id, pg.metodo_pagamento_id, pg.valor]
                                                     );
                                                     database.run(
-                                                        "INSERT INTO FluxoCaixa (tipo, valor, metodo_pagamento_id, descricao, data_movimentacao) VALUES ('Entrada', ?, ?, ?, datetime('now', 'localtime'))",
-                                                        [pg.valor, pg.metodo_pagamento_id, `Recebimento ${descricaoBase}`]
+                                                        "INSERT INTO FluxoCaixa (tipo, valor, metodo_pagamento_id, descricao, data_movimentacao) VALUES ('Entrada', ?, ?, ?, ?)",
+                                                        [pg.valor, pg.metodo_pagamento_id, `Recebimento ${descricaoBase}`, getAgoraSP()]
                                                     );
                                                 }
                                             }
@@ -266,6 +266,22 @@ router.put('/:id/status', ensureAdmin, (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!this || this.changes === 0) {
             return res.status(404).json({ message: "Pedido não encontrado." });
+        }
+
+        if (status === 'Cancelado') {
+            database.all("SELECT cliente_id, valor FROM CupomPendente WHERE pedido_id = ?", [id], (err, cupons) => {
+                if (!err && cupons) {
+                    cupons.forEach(cupom => {
+                        if (cupom.cliente_id) {
+                            database.run("UPDATE Cliente SET valor_pendente = MAX(0, COALESCE(valor_pendente, 0) - ?) WHERE id = ?", [cupom.valor, cupom.cliente_id]);
+                        }
+                    });
+                }
+                database.run("DELETE FROM CupomPendente WHERE pedido_id = ?", [id]);
+            });
+
+            database.run("DELETE FROM PedidoPagamento WHERE pedido_id = ?", [id]);
+            database.run("DELETE FROM FluxoCaixa WHERE descricao LIKE '%Pedido #' || ? || ')%'", [id]);
         }
         
         res.json({
