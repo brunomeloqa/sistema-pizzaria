@@ -15,7 +15,7 @@ const PedidoNovo = () => {
 
     // ATENÇÃO AQUI: Agora usamos um array para split payment
     const [pagamentos, setPagamentos] = useState([]);
-    const [pagamentoNaEntrega, setPagamentoNaEntrega] = useState(true); // Padrão: Pagar depois
+    const [pagamentoNaEntrega, setPagamentoNaEntrega] = useState(false); // Padrão: Desmarcado
     const [observacaoPedido, setObservacaoPedido] = useState('');
 
     const [metodosPagamento, setMetodosPagamento] = useState([]);
@@ -93,7 +93,7 @@ const PedidoNovo = () => {
             setTipoPedido('Delivery');
             setCarrinho([]);
             setPagamentos([]);
-            setPagamentoNaEntrega(true);
+            setPagamentoNaEntrega(false);
             setObservacaoPedido('');
             setClienteSelecionado(null);
             setNomeCliente('');
@@ -108,7 +108,7 @@ const PedidoNovo = () => {
                 setTipoPedido(dados.tipoPedido || 'Delivery');
                 setCarrinho(dados.carrinho || []);
                 setPagamentos(dados.pagamentos || []);
-                setPagamentoNaEntrega(dados.pagamentoNaEntrega !== undefined ? dados.pagamentoNaEntrega : true);
+                setPagamentoNaEntrega(dados.pagamentoNaEntrega !== undefined ? dados.pagamentoNaEntrega : false);
                 setObservacaoPedido(dados.observacaoPedido || '');
                 setClienteSelecionado(dados.clienteSelecionado || null);
                 setNomeCliente(dados.nomeCliente || '');
