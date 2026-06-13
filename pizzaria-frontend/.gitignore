@@ -2,6 +2,8 @@
 
 # dependencies
 /node_modules
+/pizzaria-frontend/node_modules
+/pizzaria-backend/node_modules
 /.pnp
 .pnp.js
 
