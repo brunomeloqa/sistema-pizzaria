@@ -18,6 +18,7 @@
         "assets": [
             "pizzaria-server/sql-wasm-asset.wasm",
             "pizzaria-server/node_modules/sql.js/dist/**/*",
+            "pizzaria-server/node_modules/iconv-lite/encodings/**/*",
             "pizzaria-frontend/build/**/*",
             "pizzaria-server/uploads/**/*"
         ],

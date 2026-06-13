@@ -5,6 +5,8 @@ import { BACKEND_BASE_URL } from '../constants/apiConstants';
 const PrintConfigForm = ({ config = {}, handleConfigChange, handleSaveConfig }) => {
     const [subTab, setSubTab] = useState('geral');
     const [printersList, setPrintersList] = useState([]);
+    const [showAdvanced, setShowAdvanced] = useState(false);
+    const [testPrintLoading, setTestPrintLoading] = useState(false);
 
     useEffect(() => {
         // Busca a lista de impressoras disponíveis
@@ -70,16 +72,18 @@ const PrintConfigForm = ({ config = {}, handleConfigChange, handleSaveConfig }) 
     };
 
     const handleTestPrint = async (layoutType) => {
+        setTestPrintLoading(true);
         try {
             const data = { layoutType };
             const response = await apiService.api.post('/config/test-print', data);
-            
-            if (response.data) {
-                alert(`Comando de teste (${layoutType}) enviado com sucesso!`);
-            }
+            alert(`✅ ${response.data.message || 'Teste enviado com sucesso!'}`);
         } catch (error) {
             console.error("Erro ao testar impressão:", error);
-            alert('Falha ao enviar comando para a impressora. Verifique o servidor/caminho.');
+            const msg = error.response?.data?.error || 'Falha ao enviar comando para a impressora.';
+            const details = error.response?.data?.details ? `\n\nDetalhe: ${error.response.data.details}` : '';
+            alert(`❌ ${msg}${details}`);
+        } finally {
+            setTestPrintLoading(false);
         }
     };
 
@@ -105,41 +109,65 @@ const PrintConfigForm = ({ config = {}, handleConfigChange, handleSaveConfig }) 
                     {/* ABA GERAL */}
                     {subTab === 'geral' && (
                         <div>
-                            <h3>Configuração Física da Impressora</h3>
+                            <h3>Configuração da Impressora</h3>
+                            
                             <div style={{ marginBottom: '15px' }}>
-                                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px' }}>Tipo de Conexão</label>
-                                <select name="impressora_tipo" value={config.impressora_tipo || 'windows_share'} onChange={handleConfigChange} style={{ padding: '10px', width: '100%', borderRadius: '4px', border: '1px solid #ccc' }}>
-                                    <option value="serial">Porta Serial / LPT / Driver Cru</option>
-                                    <option value="windows_share">Impressora Windows (Rede/Compartilhada)</option>
-                                </select>
-                            </div>
-
-                            <div style={{ marginBottom: '15px' }}>
-                                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px' }}>Caminho ou Nome do Compartilhamento</label>
+                                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px' }}>Selecione a Impressora</label>
                                 <select 
                                     name="impressora_caminho" 
                                     value={config.impressora_caminho || ''} 
                                     onChange={handleConfigChange} 
-                                    style={{ padding: '10px', width: '100%', borderRadius: '4px', border: '1px solid #ccc', marginBottom: '10px' }} 
+                                    style={{ padding: '12px', width: '100%', borderRadius: '6px', border: '1px solid #ccc', fontSize: '15px', background: '#fff' }} 
                                 >
-                                    <option value="" disabled>Selecione nas impressoras identificadas...</option>
+                                    <option value="" disabled>Selecione uma impressora da lista...</option>
                                     {printersList.map((printerName, i) => (
                                         <option key={i} value={printerName}>{printerName}</option>
                                     ))}
                                     {config.impressora_caminho && !printersList.includes(config.impressora_caminho) && (
-                                        <option value={config.impressora_caminho}>{config.impressora_caminho} (Caminho Customizado)</option>
+                                        <option value={config.impressora_caminho}>{config.impressora_caminho} (Atual / Customizada)</option>
                                     )}
                                 </select>
-                                
-                                <input 
-                                    type="text" 
-                                    name="impressora_caminho" 
-                                    value={config.impressora_caminho || ''} 
-                                    onChange={handleConfigChange} 
-                                    placeholder="Ou digite manualmente (Ex: COM1 ou \\localhost\Diebold)" 
-                                    style={{ padding: '10px', width: '100%', borderRadius: '4px', border: '1px solid #ccc' }} 
-                                />
                             </div>
+
+                            <div style={{ marginBottom: '20px' }}>
+                                <button 
+                                    type="button" 
+                                    onClick={() => setShowAdvanced(!showAdvanced)} 
+                                    style={{ 
+                                        background: 'none', border: 'none', color: '#007bff', cursor: 'pointer', 
+                                        fontSize: '14px', fontWeight: '500', padding: '0', display: 'flex', alignItems: 'center', gap: '5px' 
+                                    }}
+                                >
+                                    {showAdvanced ? '▼ Ocultar Opções Avançadas' : '▶ Mostrar Opções Avançadas'}
+                                </button>
+                            </div>
+
+                            {showAdvanced && (
+                                <div style={{ background: '#f9f9f9', padding: '15px', borderRadius: '6px', border: '1px solid #eee', marginBottom: '20px' }}>
+                                    <div style={{ marginBottom: '15px' }}>
+                                        <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', fontSize: '13px', color: '#555' }}>Tipo de Conexão</label>
+                                        <select name="impressora_tipo" value={config.impressora_tipo || 'windows_share'} onChange={handleConfigChange} style={{ padding: '10px', width: '100%', borderRadius: '4px', border: '1px solid #ccc', fontSize: '14px' }}>
+                                            <option value="serial">Porta Serial / LPT / Driver Cru</option>
+                                            <option value="windows_share">Impressora Windows (Rede/Compartilhada)</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', fontSize: '13px', color: '#555' }}>Caminho / Porta Manual</label>
+                                        <input 
+                                            type="text" 
+                                            name="impressora_caminho" 
+                                            value={config.impressora_caminho || ''} 
+                                            onChange={handleConfigChange} 
+                                            placeholder="Digite manualmente (Ex: COM1 ou \\localhost\Impressora)" 
+                                            style={{ padding: '10px', width: '100%', borderRadius: '4px', border: '1px solid #ccc', fontSize: '14px' }} 
+                                        />
+                                        <small style={{ color: '#777', marginTop: '5px', display: 'block' }}>
+                                            Use este campo se a sua impressora estiver conectada via porta serial direta (COM) ou se quiser definir um caminho customizado.
+                                        </small>
+                                    </div>
+                                </div>
+                            )}
 
                             <div style={{ marginBottom: '15px' }}>
                                 <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px' }}>Tamanho da Fonte</label>
@@ -179,7 +207,14 @@ const PrintConfigForm = ({ config = {}, handleConfigChange, handleSaveConfig }) 
                             </div>
 
                             <button onClick={handleSaveConfig} className="btn-success" style={{ padding: '10px 20px', marginRight: '10px' }}>Salvar Layout Cozinha</button>
-                            <button onClick={() => handleTestPrint('cozinha')} className="btn-primary" style={{ padding: '10px 20px' }}>Imprimir Teste (Cozinha)</button>
+                            <button 
+                                onClick={() => handleTestPrint('cozinha')} 
+                                className="btn-primary" 
+                                disabled={testPrintLoading}
+                                style={{ padding: '10px 20px', opacity: testPrintLoading ? 0.6 : 1 }}
+                            >
+                                {testPrintLoading ? '⏳ Enviando...' : '🖨️ Imprimir Teste (Cozinha)'}
+                            </button>
                         </div>
                     )}
 
@@ -213,7 +248,14 @@ const PrintConfigForm = ({ config = {}, handleConfigChange, handleSaveConfig }) 
 
                             <br/>
                             <button onClick={handleSaveConfig} className="btn-success" style={{ padding: '10px 20px', marginRight: '10px' }}>Salvar Layout Entrega</button>
-                            <button onClick={() => handleTestPrint('entregador')} className="btn-primary" style={{ padding: '10px 20px' }}>Imprimir Teste (Entrega)</button>
+                            <button 
+                                onClick={() => handleTestPrint('entregador')} 
+                                className="btn-primary" 
+                                disabled={testPrintLoading}
+                                style={{ padding: '10px 20px', opacity: testPrintLoading ? 0.6 : 1 }}
+                            >
+                                {testPrintLoading ? '⏳ Enviando...' : '🖨️ Imprimir Teste (Entrega)'}
+                            </button>
                         </div>
                     )}
                 </div>

@@ -4,9 +4,9 @@ const db = require('./database').db(); // Conexão com SQLite
 const queue = []; // A fila que armazena os IDs dos pedidos
 let isProcessing = false; // Flag para garantir que apenas um pedido seja processado por vez
 const { formatarPedidoParaImpressao } = require('./services/printFormatter');
+const { enviarParaImpressora } = require('./services/printExecutor');
 const fs = require('fs');
 const path = require('path');
-const { exec } = require('child_process');
 
 /**
  * Envia o buffer puro para a impressora usando ferramentas do SO.
@@ -33,32 +33,24 @@ async function printJob(pedido) {
         // Gera o buffer ESC/POS
         const buffer = await formatarPedidoParaImpressao(pedido, config, layoutType);
 
-        // Define arquivo temporário
-        const tempFile = path.join(__dirname, `cupom_${pedido.id}.bin`);
+        // Define arquivo temporário no diretório temp do SO
+        const os = require('os');
+        const tempFile = path.join(os.tmpdir(), `cupom_${pedido.id}.bin`);
         fs.writeFileSync(tempFile, buffer);
 
-        // Comando para Windows: copy /b arquivo porta_ou_share
-        const comando = `copy /b "${tempFile}" "${config.impressora_caminho}"`;
-        
-        console.log(`[Print Queue] Executando envio Raw: ${comando}`);
-
-        await new Promise((resolve, reject) => {
-            exec(comando, (err, stdout, stderr) => {
-                // Tenta apagar o temp file
-                try { fs.unlinkSync(tempFile); } catch(e) {}
-                
-                if (err) {
-                    console.error('[Print Queue] Erro ao enviar para impressora:', err.message);
-                    resolve(); // resolve para não travar a fila
-                } else {
-                    console.log('[Print Queue] Impresso com sucesso.');
-                    resolve();
-                }
-            });
-        });
+        try {
+            await enviarParaImpressora(tempFile, config.impressora_caminho);
+            console.log('[Print Queue] Impresso com sucesso.');
+        } catch (printErr) {
+            console.error('[Print Queue] Erro ao enviar para impressora:', printErr.message);
+        } finally {
+            try {
+                if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
+            } catch (e) {}
+        }
 
     } catch (e) {
-        console.error('[Print Queue] Erro na geração da impressão:', e);
+        console.error('[Print Queue] Erro na geração da impressão:', e.message);
     }
     console.log(`======================================================\n`);
 }

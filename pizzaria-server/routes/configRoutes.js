@@ -133,87 +133,179 @@ router.post('/test-print', ensureAdmin, async (req, res) => {
     const { formatarPedidoParaImpressao } = require('../services/printFormatter');
     const fs = require('fs');
     const path = require('path');
-    const { exec } = require('child_process');
 
     database.get("SELECT * FROM Configuracoes WHERE id = 1", [], async (err, config) => {
         if (err) return res.status(500).send("Erro ao buscar config");
         const reqLayoutType = req.body.layoutType || 'geral';
 
-        // Simula um pedido fictício para o teste
+        // Garante que os print_order tenham valor padrão caso não configurados
+        const defaultOrder = 'num_pedido,dados_cliente,itens_pedido,valor_total,modo_pagamento,observacao';
+        if (!config.print_order) config.print_order = defaultOrder;
+        if (!config.print_order_cozinha) config.print_order_cozinha = config.print_order || defaultOrder;
+        if (!config.print_order_entregador) config.print_order_entregador = config.print_order || defaultOrder;
+
+        // Simula um pedido fictício completo para o teste
         const pedidoTeste = {
             id: "999",
-            cliente_nome: "TESTE DE IMPRESSÃO",
-            cliente_telefone: "(00) 00000-0000",
+            cliente_nome: "CLIENTE TESTE",
+            cliente_telefone: "(11) 99999-9999",
             endereco_entrega: "Rua Exemplo, 123",
             complemento_entrega: "Apto 45",
             valor_total: 99.90,
-            forma_pagamento: "TESTE PIX",
-            observacao: "Teste de impressão do sistema",
+            forma_pagamento: "PIX",
+            observacao: "Teste de impressão - " + reqLayoutType.toUpperCase(),
+            tipo_entrega: reqLayoutType === 'cozinha' ? 'balcao' : 'entrega',
             itens: [
-                { quantidade: 1, nome: "PIZZA TESTE 01", valor: 49.95, observacao: "Sem cebola" },
-                { quantidade: 1, nome: "PIZZA TESTE 02", valor: 49.95 }
+                { quantidade: 1, nome: "PIZZA TESTE CALABRESA", valor: 49.95, observacao: "Sem cebola" },
+                { quantidade: 1, nome: "PIZZA TESTE MUSSARELA", valor: 49.95, observacao: "" }
             ]
         };
 
         try {
             const buffer = await formatarPedidoParaImpressao(pedidoTeste, config, reqLayoutType);
             
-            const tempFile = path.join(__dirname, '..', `teste_print_${Date.now()}.bin`);
+            if (!buffer || buffer.length === 0) {
+                return res.status(500).json({ error: "Buffer de impressão vazio. Verifique as configurações de layout." });
+            }
+
+            const os = require('os');
+            const tempFile = path.join(os.tmpdir(), `teste_print_${Date.now()}.bin`);
             fs.writeFileSync(tempFile, buffer);
             
-            if (!config.impressora_caminho) throw new Error("Caminho da impressora não configurado");
-
-            const comando = `copy /b "${tempFile}" "${config.impressora_caminho}"`;
-            console.log(`[Teste Impressão] Executando envio Raw: ${comando}`);
-
-            exec(comando, (err, stdout, stderr) => {
+            if (!config.impressora_caminho) {
                 try { fs.unlinkSync(tempFile); } catch(e) {}
-                
-                if (err) {
-                    console.error('[Teste Impressão] Erro ao enviar:', err.message);
-                    return res.status(500).json({ error: "Falha ao enviar comando para o Windows", details: err.message });
-                }
-                res.json({ message: "Comando de teste enviado com sucesso!" });
-            });
+                return res.status(400).json({ error: "Nenhuma impressora selecionada. Configure a impressora na aba 'Geral'." });
+            }
+
+            const { enviarParaImpressora } = require('../services/printExecutor');
+
+            console.log(`[Teste Impressão] Layout: ${reqLayoutType} | Impressora: ${config.impressora_caminho}`);
+            enviarParaImpressora(tempFile, config.impressora_caminho)
+                .then(() => {
+                    res.json({ message: `Teste de impressão (${reqLayoutType}) enviado com sucesso!` });
+                })
+                .catch((printErr) => {
+                    console.error('[Teste Impressão] Erro ao enviar:', printErr.message);
+                    res.status(500).json({ error: "Falha ao enviar para a impressora", details: printErr.message });
+                })
+                .finally(() => {
+                    try {
+                        if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
+                    } catch(e) {}
+                });
 
         } catch (e) {
             console.error("Erro no test-print:", e);
-            res.status(500).json({ error: "Erro interno", details: e.message });
+            res.status(500).json({ error: "Erro ao gerar buffer de impressão", details: e.message });
         }
+    });
+});
+
+// --- Endpoint de diagnóstico: envia bytes ESC/POS hardcoded, sem layout ---
+// Útil para verificar se a impressora aceita dados RAW, ignorando o gerador de layout.
+router.post('/test-print-raw', ensureAdmin, (req, res) => {
+    const database = db();
+    database.get("SELECT impressora_caminho FROM Configuracoes WHERE id = 1", [], async (err, config) => {
+        if (err || !config || !config.impressora_caminho)
+            return res.status(400).json({ error: 'Impressora não configurada nas configurações.' });
+
+        const fs   = require('fs');
+        const os   = require('os');
+        const path = require('path');
+        const { enviarParaImpressora } = require('../services/printExecutor');
+
+        // Bytes ESC/POS mínimos: inicializar + centralizar + texto + alimentar + cortar
+        const escpos = Buffer.from([
+            0x1B, 0x40,             // ESC @ - reinicializar
+            0x1B, 0x61, 0x01,       // ESC a 1 - centralizar
+            0x1B, 0x21, 0x20,       // ESC ! - negrito
+            ...Buffer.from('*** TESTE IMPRESSORA ***\n', 'ascii'),
+            0x1B, 0x21, 0x00,       // ESC ! - normal
+            ...Buffer.from('Sistema Pizzaria - RAW OK\n', 'ascii'),
+            ...Buffer.from('------------------------\n', 'ascii'),
+            0x1B, 0x64, 0x05,       // ESC d 5 - avança 5 linhas
+            0x1D, 0x56, 0x41, 0x05  // GS V A - corte parcial
+        ]);
+
+        const tempFile = path.join(os.tmpdir(), `raw_test_${Date.now()}.bin`);
+        fs.writeFileSync(tempFile, escpos);
+
+        console.log(`[Teste RAW] Enviando ${escpos.length} bytes para: ${config.impressora_caminho}`);
+        enviarParaImpressora(tempFile, config.impressora_caminho)
+            .then(() => {
+                res.json({ message: `✅ ${escpos.length} bytes RAW enviados com sucesso para a fila de impressão!` });
+            })
+            .catch(e => {
+                res.status(500).json({ error: 'Falha ao enviar bytes RAW', details: e.message });
+            })
+            .finally(() => { try { fs.unlinkSync(tempFile); } catch(_){} });
     });
 });
 
 // --- Endpoint para listar impressoras do Windows ---
 router.get('/printers', ensureAdmin, (req, res) => {
     const { exec } = require('child_process');
-    const comando = `powershell -Command "@(Get-Printer | Select-Object -Property Name, Shared, ShareName) | ConvertTo-Json"`;
+
+    if (process.platform !== 'win32') {
+        // Mock para desenvolvimento em ambiente não-Windows (Linux/macOS)
+        return res.json({ printers: ['Impressora Teste 1 (Virtual)', 'Impressora Teste 2 (Virtual)', 'COM1', 'LPT1'] });
+    }
+
+    const script = `
+$printers = @()
+try {
+    Add-Type -AssemblyName System.Drawing
+    $printers += [System.Drawing.Printing.PrinterSettings]::InstalledPrinters
+} catch {}
+if ($printers.Count -eq 0) {
+    try {
+        $printers += (Get-Printer | Select-Object -ExpandProperty Name)
+    } catch {}
+}
+if ($printers.Count -eq 0) {
+    try {
+        $printers += (Get-CimInstance Win32_Printer | Select-Object -ExpandProperty Name)
+    } catch {}
+}
+if ($printers.Count -eq 0) {
+    try {
+        $wmicOut = wmic printer get name
+        $printers += ($wmicOut | Select-String -Pattern '\\S' | Select-Object -Skip 1 | ForEach-Object { $_.ToString().Trim() })
+    } catch {}
+}
+$printers = $printers | Select-Object -Unique | Where-Object { $_ }
+if ($printers) {
+    $printers | ConvertTo-Json -Compress
+} else {
+    "[]"
+}
+`;
+
+    const buffer = Buffer.from(script, 'utf16le');
+    const base64 = buffer.toString('base64');
+    const comando = `powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${base64}`;
     
     exec(comando, (err, stdout, stderr) => {
         if (err) {
-            console.error('Erro ao listar impressoras:', err.message);
-            return res.status(500).json({ error: 'Erro ao listar impressoras.', details: err.message });
+            console.error('Erro ao listar impressoras com script robusto:', err.message, stderr);
+            return res.json({ printers: [] });
         }
         try {
-            let printers = JSON.parse(stdout);
+            const output = stdout.trim();
+            if (!output || output === '[]') {
+                return res.json({ printers: [] });
+            }
+            
+            let printers = JSON.parse(output);
             if (!Array.isArray(printers)) {
                 printers = printers ? [printers] : [];
             }
             
-            let printerNames = [];
-            printers.forEach(p => {
-                if (p.Name) printerNames.push(p.Name);
-                if (p.Shared && p.ShareName) {
-                    printerNames.push(`\\\\localhost\\${p.ShareName}`);
-                }
-            });
-            
             // Remove duplicatas se houver
-            printerNames = [...new Set(printerNames)].filter(Boolean);
-            
+            const printerNames = [...new Set(printers)].filter(Boolean);
             res.json({ printers: printerNames });
         } catch (e) {
-            console.error('Erro ao parsear impressoras:', e.message);
-            // Fallback de erro
+            console.error('Erro ao parsear impressoras:', e.message, 'Raw Output:', stdout);
             res.json({ printers: [] });
         }
     });

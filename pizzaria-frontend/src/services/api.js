@@ -45,6 +45,7 @@ apiClient.interceptors.response.use(
 );
 
 export const apiService = {
+    api: apiClient,
     login: (credentials) => apiClient.post('/auth/login', credentials),
     
     //Caixa

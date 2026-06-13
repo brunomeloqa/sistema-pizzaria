@@ -17,9 +17,18 @@ async function formatarPedidoParaImpressao(pedido, config, layoutType = 'geral')
 
     const ordem = typeof print_order === 'string' ? print_order.split(',') : print_order;
 
+    // Usamos um objeto fake como interface para evitar o carregamento do módulo
+    // 'write-file-queue' que ocorre quando interface: 'none' é passado.
+    // O core.js do node-thermal-printer aceita um objeto diretamente via
+    // `if (typeof uri === 'object') return uri;` sem carregar dependências externas.
+    const fakeInterface = {
+      execute: async () => {},
+      isPrinterConnected: async () => false,
+    };
+
     let printer = new ThermalPrinter({
       type: PrinterTypes.EPSON, // Generico ESC/POS
-      interface: 'none', // Nós geramos o JS Buffer e enviamos nós mesmos
+      interface: fakeInterface, // Objeto fake: evita carregar write-file-queue no pkg
       characterSet: 'PC860_PORTUGUESE', // Caracteres portugueses
       removeSpecialCharacters: false,
       lineCharacter: "-",

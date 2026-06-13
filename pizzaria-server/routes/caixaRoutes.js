@@ -210,7 +210,6 @@ router.post('/imprimir', (req, res) => {
     const database = db();
     const ThermalPrinter = require("node-thermal-printer").printer;
     const PrinterTypes = require("node-thermal-printer").types;
-    const { exec } = require('child_process');
     const path = require('path');
     const fs = require('fs');
 
@@ -293,19 +292,25 @@ router.post('/imprimir', (req, res) => {
             printer.cut();
 
             const buffer = printer.getBuffer();
-            const tempFile = path.join(__dirname, '..', `caixa_print_${Date.now()}.bin`);
+            const os = require('os');
+            const tempFile = path.join(os.tmpdir(), `caixa_print_${Date.now()}.bin`);
             fs.writeFileSync(tempFile, buffer);
 
-            const comando = `copy /b "${tempFile}" "${config.impressora_caminho}"`;
-            
-            exec(comando, (execErr) => {
-                try { fs.unlinkSync(tempFile); } catch(e) {}
-                if (execErr) {
+            const { enviarParaImpressora } = require('../services/printExecutor');
+
+            enviarParaImpressora(tempFile, config.impressora_caminho)
+                .then(() => {
+                    res.json({ message: "Relatório enviado para a impressora!" });
+                })
+                .catch((execErr) => {
                     console.error('[Caixa] Erro ao imprimir:', execErr.message);
-                    return res.status(500).json({ error: "Falha ao comunicar com Windows spooler" });
-                }
-                res.json({ message: "Relatório enviado para a impressora!" });
-            });
+                    res.status(500).json({ error: "Falha ao enviar comando para a impressora", details: execErr.message });
+                })
+                .finally(() => {
+                    try {
+                        if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
+                    } catch(e) {}
+                });
 
         } catch (e) {
             console.error("Erro na montagem do relatorio p/ impressao:", e);
